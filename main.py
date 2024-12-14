@@ -1,4 +1,4 @@
-# Tyson Eifert
+# Tyson E, Jerry C, Colton P
 # 11/11/2024
 # Data Structures Project - AI Detection
 
