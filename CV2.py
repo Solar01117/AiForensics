@@ -152,44 +152,36 @@ class ComputerVisionModule:
                 filetypes=[("Image Files", "*.png;*.jpg;*.jpeg"), ("PNG files", "*.png"),
                           ("JPEG files", "*.jpg;*.jpeg")]
             )
-            if not self.file_path:
-                raise ValueError("No file selected.")
 
             # Load the image with OpenCV
             image = cv2.imread(self.file_path)
             if image is None:
                 raise ValueError("Failed to load image. Please check the file format.")
 
-            # Convert image to RGB
+            # Convert to RGB and Grayscale once
             rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-            # Store the image for further processing
+            # Save image for later processing
             self.image = image
 
-            # Optimize resizing by resizing to a fixed size directly using PIL (no aspect ratio constraint)
-            pil_image = Image.fromarray(rgb_image)
-            pil_image = pil_image.resize((300, 300), Image.Resampling.LANCZOS)  # Use LANCZOS for high-quality downsampling
-            photo = ImageTk.PhotoImage(pil_image)
+            # Function to handle image resizing and display in canvas
+            def display_image(canvas, image_array, anchor="nw"):
+                pil_image = Image.fromarray(image_array)
+                pil_image.thumbnail((300, 300))
+                photo = ImageTk.PhotoImage(pil_image)
+                canvas.create_image(0, 0, anchor=anchor, image=photo)
+                canvas.image = photo
 
-            # Display the resized image on the canvas (top-right quadrant)
-            self.image_canvas.create_image(0, 0, anchor="nw", image=photo)
-            self.image_canvas.image = photo  # Keep a reference to avoid garbage collection
+            # Resize and display the original RGB image in top right quadrant
+            display_image(self.image_canvas, rgb_image)
 
-            # Convert to grayscale and display in bottom-left quadrant
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            pil_gray_image = Image.fromarray(gray_image)
-            pil_gray_image = pil_gray_image.resize((300, 300), Image.Resampling.LANCZOS)  # Use LANCZOS
-            gray_photo = ImageTk.PhotoImage(pil_gray_image)
-            self.bottom_left_canvas.create_image(0, 0, anchor="nw", image=gray_photo)
-            self.bottom_left_canvas.image = gray_photo  # Keep a reference
+            # Display the grayscale image in bottom left quadrant
+            display_image(self.bottom_left_canvas, gray_image)
 
-            # Generate noise visualization and display in bottom-right quadrant
+            # Generate and display the noise visualization in bottom right quadrant
             self.noise_image = self.noise_visualizer.generate_noise_visualization(image)
-            pil_noise_image = Image.fromarray(self.noise_image)
-            pil_noise_image = pil_noise_image.resize((300, 300), Image.Resampling.LANCZOS)  # Use LANCZOS
-            noise_photo = ImageTk.PhotoImage(pil_noise_image)
-            self.noise_canvas.create_image(0, 0, anchor="nw", image=noise_photo)
-            self.noise_canvas.image = noise_photo  # Keep a reference
+            display_image(self.noise_canvas, self.noise_image)
 
             # Update the analysis label
             self.analysis_label_main.config(text="Noise Analysis: Visualized in bottom right quadrant.")
@@ -201,6 +193,8 @@ class ComputerVisionModule:
 
         except Exception as e:
             self.show_error(f"Error loading image: {str(e)}")
+
+
 
     def show_error(self, error_message):
         error_window = tk.Toplevel(self.master)
